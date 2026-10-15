@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      datafil:
+        description: "Vilken datafil i data/ ska kontrolleras?"
+        type: string
+        default: "kundbas.csv"
+  push:
+    branches: [main]
+    paths:
+    - "src/**"
+    - ".github/**"
+    - "data/**"
+    - "tests/**"
+    - pyproject.toml
+    - uv.lock
+  pull_request:
+    branches: [main]
+    paths:
+    - "src/**"
+    - ".github/**"
+    - "data/**"
+    - "tests/**"
+    - pyproject.toml
+    - uv.lock
+  schedule:
+    - cron: "0 5 * * 1"
+
+concurrency:
+  group: Workflow namn-${{ github.workflow }} branch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # avbryter inte om en av versionerna går rött
+      matrix: # kör en kopia av varje värde, versioner i detta fallet
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup # använder .github/actions/setup så att det inte blir dry. om inget är anget med 'with' så kommer standardvärden anges som står specade i action.yml
+        with:
+          python-version: ${{ matrix.python-version }}
+          paket: ".[dev]"
+      - run: python -m churn.model 
+      - run: pytest
+      
+  datakontroll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          paket: ".[data]"
+      - run: python -m kontroller.schema data/${{ inputs.datafil || 'kundbas.csv' }}
+
+  training:
+    needs: [tests, datakontroll]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with: 
+          paket: ".[dev]"
+      - run: python -m churn.model
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modell-${{ github.sha }} # lägger till så att github hashen kommer med
+          path: outputs/
+    
+  evaluate:
+    needs: training
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with:
+          name: modell-${{ github.sha }}
+          path: outputs/
+      - run: cat "outputs/matvarden.json" >> $GITHUB_STEP_SUMMARY # skriver matvarden.json till summaryn i github actions
+      - run: python -m churn.evaluate
+
+  ringlista:
+    needs: evaluate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with:
+          name: modell-${{ github.sha }}
+          path: outputs/
+      - run: python -m churn.score
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ringlista-${{ github.sha }}
+          path: outputs/ringlista.csv
+

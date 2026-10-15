@@ -1,0 +1,21 @@
+name: setup
+description: A setup action for jobs
+
+inputs:
+  python-version:
+    description: Python 3.11 installation
+    default: "3.11"
+  
+  paket:
+    description: Decides if dev tools are installed
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: "pip"
+    - run: pip install -e "${{ inputs.paket }}"
+      shell: bash
