@@ -45,7 +45,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           paket: ".[dev]"
-      - run: python -m churn.model 
       - run: pytest
       
   datakontroll:
