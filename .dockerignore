@@ -1,0 +1,29 @@
+# Allt i mappen skickas till Docker vid bygget ("build context").
+# Här listar vi det som INTE ska skickas med.
+
+# Git-historik och workflows behövs inte i imagen
+.git
+.github
+
+# Din lokala venv är byggd för macOS och fungerar inte i Linux-containern
+.venv
+
+# Skräpfiler från Python, pytest och ruff
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Hemligheter ska ALDRIG in i en image (ett lager glömmer aldrig)
+.env
+.env.*
+
+# Sådant som API:t inte behöver
+tests/
+data/
+arenden/
+kontroller/
+README.md
+
+# Ringlistan är ett resultat, inte något API:t behöver
+outputs/ringlista.csv
