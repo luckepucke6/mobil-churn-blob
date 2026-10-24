@@ -104,7 +104,7 @@ jobs:
           name: ringlista-${{ github.sha }}
           path: outputs/ringlista.csv
 
-    build-image:
+  build-image:
     needs: evaluate
     runs-on: ubuntu-latest
     # jobbet får läsa repot och skriva till githubs container-registry
