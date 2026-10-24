@@ -16,6 +16,8 @@ on:
     - "tests/**"
     - pyproject.toml
     - uv.lock
+    - Dockerfile
+    - .dockerignore
   pull_request:
     branches: [main]
     paths:
@@ -25,6 +27,8 @@ on:
     - "tests/**"
     - pyproject.toml
     - uv.lock
+    - Dockerfile
+    - .dockerignore
   schedule:
     - cron: "0 5 * * 1"
 
