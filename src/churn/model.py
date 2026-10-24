@@ -7,6 +7,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
+from datetime import UTC, datetime
+import pandas as pd
+import sklearn
 
 import joblib
 from sklearn.compose import ColumnTransformer
@@ -59,6 +63,11 @@ def main(utkatalog: Path = Path("outputs")) -> None:
     matvarden["commit"] = os.environ.get("GITHUB_SHA", "lokal")
     matvarden["datafil"] = DATAFIL
     matvarden["data_sha256"] = hashlib.sha256((DATAKATALOG / DATAFIL).read_bytes()).hexdigest()
+    matvarden["tranad"] = datetime.now(UTC).isoformat(timespec="seconds")
+    matvarden["python_version"] = platform.python_version()
+    matvarden["sklearn_version"] = sklearn.__version__
+    matvarden["pandas_version"] = pd.__version__
+    matvarden["korning_id"] = os.environ.get("GITHUB_RUN_ID", "lokal")
     utkatalog.mkdir(exist_ok=True)
     joblib.dump(modell, utkatalog / "modell.joblib")
     (utkatalog / "matvarden.json").write_text(json.dumps(matvarden, indent=2))
