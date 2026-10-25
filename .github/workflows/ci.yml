@@ -160,6 +160,6 @@ jobs:
       - name: Pusha image
         if: github.ref == 'refs/heads/main'
         run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
-      - name:
+      - name: Visa containerloggar
         if: failure()
         run: docker logs churn-smoke || true
