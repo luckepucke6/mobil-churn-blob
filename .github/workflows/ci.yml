@@ -126,15 +126,40 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # bygger imagen från dockerfilen i roten av repot
-      - uses: docker/build-push-action@v7
-        with: 
+      - name: Bygg image
+        uses: docker/build-push-action@v7
+        with:
           context: .
-          # pusha bara från main. på en pull request byggs imagen bara, som ett test
-          push: ${{ github.ref == 'refs/heads/main' }}
-          # taggas med comittens 'sha' i stället latest, så att man vet vilken modell som finns i den
+          load: true
+          push: false
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
-          # sparar och återanvänd docker-lager mellan körningar, så att bygget går snabbare
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: starta-containern
+        run: docker run -d --name churn-smoke -p 8000:8000 ghcr.io/${{ github.repository }}:${{ github.sha}}  
+      - name: Vänta-på-api
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then exit 0; fi
+            sleep 1
+          done
+          echo "API:t svarade inte inom 30 sek"
+          exit 1
+      - name: Smoke-test, modellen är laddad
+        run: |
+          svar=$(curl -sf -X GET http://localhost:8000/health)
+          echo "$svar"
+          echo "$svar" | jq -e '.modell_laddad == true'
+      - name: Smoke-test, predict
+        run: |
+          svar=$(curl -sf -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"alder":30,"manader_som_kund":85,"manadskostnad":303.7,"data_gb_per_manad":4.4,"supportarenden_12m":0,"region":"Norr","abonnemang":"Standard"}')
+          echo "$svar"
+          echo "$svar" | jq -e '.risk >= 0 and .risk <= 1'
+      - name: Pusha image
+        if: github.ref == 'refs/heads/main'
+        run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+      - name:
+        if: failure()
+        run: docker logs churn-smoke || true
