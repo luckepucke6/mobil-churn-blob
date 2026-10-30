@@ -28,3 +28,7 @@ Thumbs.db
 # modellfiler (byggs i ci, ska inte ligga i git)
 /models
 *.joblib
+
+mlflow.db
+mlruns/
+mlartifacts
