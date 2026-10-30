@@ -7,6 +7,10 @@ on:
         description: "Vilken datafil i data/ ska kontrolleras?"
         type: string
         default: "kundbas.csv"
+      min_roc_auc:
+        description: "Lägsta godkända ROC AUC"
+        type: string
+        default: "0.70"
   push:
     branches: [main]
     paths:
@@ -85,7 +89,10 @@ jobs:
           name: modell-${{ github.sha }}
           path: outputs/
       - run: cat "outputs/matvarden.json" >> $GITHUB_STEP_SUMMARY # skriver matvarden.json till summaryn i github actions
+      - run: echo "Tröskel ${{ inputs.min_roc_auc || '0.70' }}" >> $GITHUB_STEP_SUMMARY
       - run: python -m churn.evaluate
+        env:
+          MIN_ROC_AUC: ${{ inputs.min_roc_auc || '0.70' }}
 
   ringlista:
     needs: evaluate
