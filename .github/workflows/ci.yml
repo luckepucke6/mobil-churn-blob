@@ -78,8 +78,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: modell-${{ github.sha }} # lägger till så att github hashen kommer med
+          path: outputs/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-${{ github.sha }}
           path: |
-            outputs/
+            outputs/mlflow.db
             mlruns/
     
   evaluate:
