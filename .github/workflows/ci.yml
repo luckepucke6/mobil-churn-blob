@@ -74,7 +74,7 @@ jobs:
           paket: ".[dev,tracking]"
       - run: python -m churn.model
         env:
-          MLFLOW_TRACKING_URI: sqlite://outputs/mlflow.db
+          MLFLOW_TRACKING_URI: sqlite:///outputs/mlflow.db
       - uses: actions/upload-artifact@v4
         with:
           name: modell-${{ github.sha }} # lägger till så att github hashen kommer med
