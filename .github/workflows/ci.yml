@@ -128,6 +128,9 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v7
+      # docker kräver små bokstäver i image-namn, ${GITHUB_REPOSITORY,,} gör om till gemener
+      - name: Image-namn med små bokstäver
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       - uses: actions/download-artifact@v8
         with:
           name: modell-${{ github.sha }}
@@ -141,17 +144,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # bygger för runnerns egen arkitektur (amd64) så att vi kan köra smoke-testet lokalt
       - name: Bygg image
         uses: docker/build-push-action@v7
         with:
           context: .
           load: true
           push: false
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: starta-containern
-        run: docker run -d --name churn-smoke -p 8000:8000 ghcr.io/${{ github.repository }}:${{ github.sha}}  
+        run: docker run -d --name churn-smoke -p 8000:8000 ${{ env.IMAGE }}:${{ github.sha }}
       - name: Vänta-på-api
         run: |
           for i in $(seq 1 30); do
@@ -172,9 +176,18 @@ jobs:
             -d '{"alder":30,"manader_som_kund":85,"manadskostnad":303.7,"data_gb_per_manad":4.4,"supportarenden_12m":0,"region":"Norr","abonnemang":"Standard"}')
           echo "$svar"
           echo "$svar" | jq -e '.risk >= 0 and .risk <= 1'
-      - name: Pusha image
+      # qemu emulerar arm64 så att runnern kan bygga för kursklustret (som kör arm64)
+      - uses: docker/setup-qemu-action@v3
         if: github.ref == 'refs/heads/main'
-        run: docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+      - name: Bygg och pusha (amd64 + arm64)
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
       - name: Visa containerloggar
         if: failure()
         run: docker logs churn-smoke || true
