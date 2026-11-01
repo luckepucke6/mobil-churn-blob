@@ -24,6 +24,9 @@ dev = [
     "ruff>=0.16",
 ]
 data = ["pandera>=0.24"]
+tracking = [
+    "mlflow>=3.17.2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -20,12 +20,14 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from churn.tracking import logga_korningarna
 
 from churn.data import DATAKATALOG, KATEGORISKA, NUMERISKA, dela_upp, las_data, skapa_features
 
 SEED = 42
 DATAFIL = "kundbas.csv"
-
+MAX_ITER = 1000
+TEST_SIZE = 0.25
 
 def bygg_modell() -> Pipeline:
     forbehandling = ColumnTransformer(
@@ -68,6 +70,16 @@ def main(utkatalog: Path = Path("outputs")) -> None:
     matvarden["sklearn_version"] = sklearn.__version__
     matvarden["pandas_version"] = pd.__version__
     matvarden["korning_id"] = os.environ.get("GITHUB_RUN_ID", "lokal")
+    logga_korningarna(
+        modell,
+        matvarden,
+        parametrar={
+            "seed": SEED,
+            "max_iter": MAX_ITER,
+            "test_size": TEST_SIZE,
+            "datafil": DATAFIL
+            }
+    )
     utkatalog.mkdir(exist_ok=True)
     joblib.dump(modell, utkatalog / "modell.joblib")
     (utkatalog / "matvarden.json").write_text(json.dumps(matvarden, indent=2))
@@ -76,3 +88,4 @@ def main(utkatalog: Path = Path("outputs")) -> None:
 
 if __name__ == "__main__":
     main()
+
