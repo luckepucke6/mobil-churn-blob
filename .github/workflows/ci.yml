@@ -150,6 +150,12 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Mät image-storlek
+        run: |
+          bytes=$(docker image inspect ghcr.io/${{ github.repository }}:${{ github.sha }} --format '{{.Size}}')
+          mb=$((bytes / 1024 / 1024))
+          echo "Image-storlek: ${mb} MB (${bytes} bytes)"
+          echo "Image-storlek: ${mb} MB (${bytes} bytes)" >> $GITHUB_STEP_SUMMARY
       - name: starta-containern
         run: docker run -d --name churn-smoke -p 8000:8000 ghcr.io/${{ github.repository }}:${{ github.sha}}  
       - name: Vänta-på-api
