@@ -16,6 +16,9 @@ runs:
     - uses: actions/setup-python@v7
       with:
         python-version: ${{ inputs.python-version }}
-        cache: "pip"
-    - run: pip install -e "${{ inputs.paket }}"
+    - uses: astral-sh/setup-uv@v10.3.3
+      with: 
+        enable-cache: true
+        cache-suffix: ${{ github.job }}
+    - run: uv pip install --system -e "${{ inputs.paket }}"
       shell: bash
